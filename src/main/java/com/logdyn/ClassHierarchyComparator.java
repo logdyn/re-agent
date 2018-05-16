@@ -18,7 +18,7 @@ public class ClassHierarchyComparator implements Comparator<Class<?>> {
         if (second.isAssignableFrom(first)) {
             return 1;
         }
-
-        return 0;
+        //if classes are unrelated order alphabetically.
+        return first.getName().compareTo(second.getName());
     }
 }

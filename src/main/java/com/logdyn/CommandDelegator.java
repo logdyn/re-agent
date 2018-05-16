@@ -11,7 +11,7 @@ public class CommandDelegator{
 
     private static final CommandDelegator INSTANCE = new CommandDelegator();
 
-    private final Map<Class<?>, Executor<?>> executors = new HashMap<>();
+    private final Map<Class<?>, Executor<?>> executors = new TreeMap<>(new ClassHierarchyComparator());
     private final ListIterator<Command> commands = new LinkedList<Command>().listIterator();
 
     private CommandDelegator() {}
@@ -52,16 +52,7 @@ public class CommandDelegator{
      * @return Returns true if the executor is found and removed, returns false if it is not found
      */
     public <C extends Command> boolean unsubscribe(final Executor<C> executor) {
-        final Iterator<Map.Entry<Class<?>, Executor<?>>> iterator = executors.entrySet().iterator();
-
-        while(iterator.hasNext()) {
-            if (iterator.next().getValue().equals(executor)) {
-                iterator.remove();
-                return true;
-            }
-        }
-
-        return false;
+        return executors.entrySet().removeIf((e) -> e.getValue().equals(executor));
     }
 
     /**
@@ -70,12 +61,11 @@ public class CommandDelegator{
      * @return Returns the most generic executor for the given command, returns null if no suitable executor can be found
      */
     private Executor getExecutor(final Command command) {
-        for (Class<?> clazz: executors.keySet()) {
-            if (clazz.isAssignableFrom(command.getClass())) {
-                return executors.get(clazz);
+        for (final Map.Entry<Class<?>, Executor<?>> entry : executors.entrySet()) {
+            if (entry.getKey().isAssignableFrom(command.getClass())) {
+                return entry.getValue();
             }
         }
-
         return null;
     }
 

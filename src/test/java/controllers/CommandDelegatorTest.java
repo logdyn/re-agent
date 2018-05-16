@@ -3,9 +3,9 @@ package controllers;
 import com.logdyn.Command;
 import com.logdyn.CommandDelegator;
 import org.junit.jupiter.api.Test;
-import resources.CommandDelegatorTestUtility;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static resources.CommandDelegatorTestUtility.*;
 
 
 @SuppressWarnings("Duplicates")
@@ -14,10 +14,10 @@ class CommandDelegatorTest {
     @Test
     void subscribe() {
 
-        CommandDelegatorTestUtility.SubscribeTestExecutor executor = new CommandDelegatorTestUtility.SubscribeTestExecutor();
-        Command command = new CommandDelegatorTestUtility.SubscribeCommand();
+        SubscribeTestExecutor executor = new SubscribeTestExecutor();
+        Command command = new SubscribeCommand();
 
-        assertTrue(CommandDelegator.getINSTANCE().subscribe(executor, CommandDelegatorTestUtility.SubscribeCommand.class));
+        assertTrue(CommandDelegator.getINSTANCE().subscribe(executor, SubscribeCommand.class));
         try {
             assertTrue(CommandDelegator.getINSTANCE().publish(command));
             assertTrue(executor.executed);
@@ -28,10 +28,10 @@ class CommandDelegatorTest {
 
     @Test
     void unsubscribe() {
-        CommandDelegatorTestUtility.UnsubscribeTestExecutor executor = new CommandDelegatorTestUtility.UnsubscribeTestExecutor();
-        Command command = new CommandDelegatorTestUtility.UnsubscribeCommand();
+        UnsubscribeTestExecutor executor = new UnsubscribeTestExecutor();
+        Command command = new UnsubscribeCommand();
 
-        assertTrue(CommandDelegator.getINSTANCE().subscribe(executor, CommandDelegatorTestUtility.UnsubscribeCommand.class));
+        assertTrue(CommandDelegator.getINSTANCE().subscribe(executor, UnsubscribeCommand.class));
         assertTrue(CommandDelegator.getINSTANCE().unsubscribe(executor));
         try {
             assertFalse(CommandDelegator.getINSTANCE().publish(command));
@@ -43,10 +43,10 @@ class CommandDelegatorTest {
 
     @Test
     void publish() {
-        CommandDelegatorTestUtility.PublishTestExecutor executor = new CommandDelegatorTestUtility.PublishTestExecutor();
-        Command command = new CommandDelegatorTestUtility.PublishCommand();
+        PublishTestExecutor executor = new PublishTestExecutor();
+        Command command = new PublishCommand();
 
-        assertTrue(CommandDelegator.getINSTANCE().subscribe(executor, CommandDelegatorTestUtility.PublishCommand.class));
+        assertTrue(CommandDelegator.getINSTANCE().subscribe(executor, PublishCommand.class));
         try {
             assertTrue(CommandDelegator.getINSTANCE().publish(command));
             assertTrue(executor.executed);
@@ -57,10 +57,10 @@ class CommandDelegatorTest {
 
     @Test
     void undo() {
-        CommandDelegatorTestUtility.UndoTestExecutor executor = new CommandDelegatorTestUtility.UndoTestExecutor();
-        Command command = new CommandDelegatorTestUtility.UndoCommand();
+        UndoTestExecutor executor = new UndoTestExecutor();
+        Command command = new UndoCommand();
 
-        assertTrue(CommandDelegator.getINSTANCE().subscribe(executor, CommandDelegatorTestUtility.UndoCommand.class));
+        assertTrue(CommandDelegator.getINSTANCE().subscribe(executor, UndoCommand.class));
         try {
             assertTrue(CommandDelegator.getINSTANCE().publish(command));
             assertTrue(executor.executed);
@@ -84,10 +84,10 @@ class CommandDelegatorTest {
 
     @Test
     void redo() {
-        CommandDelegatorTestUtility.RedoTestExecutor executor = new CommandDelegatorTestUtility.RedoTestExecutor();
-        Command command = new CommandDelegatorTestUtility.RedoCommand();
+        RedoTestExecutor executor = new RedoTestExecutor();
+        Command command = new RedoCommand();
 
-        assertTrue(CommandDelegator.getINSTANCE().subscribe(executor, CommandDelegatorTestUtility.RedoCommand.class));
+        assertTrue(CommandDelegator.getINSTANCE().subscribe(executor, RedoCommand.class));
         try {
             assertTrue(CommandDelegator.getINSTANCE().publish(command));
             assertTrue(executor.executed);

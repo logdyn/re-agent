@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static resources.ClassHierarchyComparatorTestUtilities.*;
 
 class ClassHierarchyComparatorTest {
@@ -46,7 +47,7 @@ class ClassHierarchyComparatorTest {
     @Test
     void compareSeparateClasses() {
         Comparator<Class<?>> comparator = new ClassHierarchyComparator();
-        assertEquals(0, comparator.compare(
+        assertNotEquals(0, comparator.compare(
                 StandaloneCommand.class,
                 ParentCommand.class));
     }
