@@ -1,8 +1,5 @@
 package com.logdyn;
 
-import javafx.beans.InvalidationListener;
-import javafx.beans.Observable;
-
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.*;
