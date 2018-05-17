@@ -33,7 +33,6 @@ public class CommandDelegator{
      */
     public <C extends Command> boolean subscribe(final Executor<C> executor, final Class <C> clazz) {
 
-        //TODO build comparator and use sorted set to sort by hierarchy, preventing issues with subscribing to superclasses
         //prevent duplicate subscription to a command
         for (Class<?> subbedClass: executors.keySet()) {
             if (subbedClass.isAssignableFrom(clazz)) {
@@ -73,9 +72,9 @@ public class CommandDelegator{
      * Publishes command to the most generic subscribed executor. Always records for undo, see {@link #publish(Command, boolean)} <br/>
      * @param command The command to execute
      * @return false if no executor is subscribed.
-     * @throws Exception if the command does not execute successfully
+     * @throws ExecutionException if the command does not execute successfully
      */
-    public synchronized boolean publish(final Command command) throws Exception {
+    public synchronized boolean publish(final Command command) throws ExecutionException {
         return publish(command, true);
     }
 
@@ -84,9 +83,9 @@ public class CommandDelegator{
      * @param command The command to execute
      * @param record whether or not to add the command to the stack, enabling undo/redo
      * @return Returns true if the command is executed, returns false if no executor is subscribed.
-     * @throws Exception if the command does not execute successfully
+     * @throws ExecutionException if the command does not execute successfully
      */
-    public synchronized boolean publish(final Command command, final boolean record) throws Exception {
+    public synchronized boolean publish(final Command command, final boolean record) throws ExecutionException {
         final Executor executor = getExecutor(command);
 
         if (executor == null) {
@@ -95,23 +94,26 @@ public class CommandDelegator{
 
         //remove any redoable commands in front of published command
         //i.e. can't publish, undo, publish, then redo the first publish
-        while (commands.hasNext() && record) {
-            commands.next();
-            commands.remove();
+        if (record)
+        {
+            this.clearRedoHistory();
         }
+
 
         //If the command is not undoable, clear all previous history
         if (!(command instanceof UndoableCommand) && record) {
-            while (commands.hasPrevious()) {
-                commands.previous();
-                commands.remove();
-            }
+            this.clearUndoHistory();
         }
 
-        //Unchecked call to execute()
-        //doing this because can't determine type until runtime, will be correct
-        //noinspection unchecked
-        executor.execute(command);
+        try {
+            //Unchecked call to execute()
+            //doing this because can't determine type until runtime, will be correct
+            //noinspection unchecked
+            executor.execute(command);
+        } catch (Exception e) {
+            throw new ExecutionException(e);
+        }
+
         if (record) {
             commands.add(command);
 
@@ -129,9 +131,9 @@ public class CommandDelegator{
      * Call unexecute command on executor on previous command
      * Only works if both command and executor are undoable
      * @return Returns true if the command undoes successfully, returns false if no executor is subscribed
-     * @throws Exception if undo does not execute successfully
+     * @throws ExecutionException if undo does not execute successfully
      */
-    public synchronized boolean undo() throws Exception {
+    public synchronized boolean undo() throws ExecutionException {
         if (commands.hasPrevious()) {
             final Command command = commands.previous();
 
@@ -154,10 +156,10 @@ public class CommandDelegator{
                     }
                 }
                 commands.next();
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 //Undo rolling history back
-                commands.next();
-                throw e;
+                this.clearUndoHistory();
+                throw new ExecutionException(e);
             }
         }
 
@@ -168,9 +170,9 @@ public class CommandDelegator{
      * Call reexecute command on executor on previous command
      * Only works if both command and executor are redoable
      * @return Returns true if command redoes successfuly, returns false if no executor is subscribed
-     * @throws Exception if undo does not execute successfully
+     * @throws ExecutionException if undo does not execute successfully
      */
-    public synchronized boolean redo() throws Exception {
+    public synchronized boolean redo() throws ExecutionException {
         if (commands.hasNext()) {
             final Command command = commands.next();
 
@@ -195,12 +197,28 @@ public class CommandDelegator{
                 commands.previous();
             } catch (Exception e) {
                 //Undo rolling history back
-                commands.previous();
-                throw e;
+                this.clearRedoHistory();
+                throw new ExecutionException(e);
             }
         }
 
         return false;
+    }
+
+    private void clearUndoHistory()
+    {
+        while (commands.hasPrevious()) {
+            commands.previous();
+            commands.remove();
+        }
+    }
+
+    private void clearRedoHistory()
+    {
+        while (commands.hasNext()) {
+            commands.next();
+            commands.remove();
+        }
     }
 
     /**
