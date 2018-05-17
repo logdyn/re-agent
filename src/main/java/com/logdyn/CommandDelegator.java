@@ -13,6 +13,7 @@ public class CommandDelegator{
 
     private final Map<Class<?>, Executor<?>> executors = new TreeMap<>(new ClassHierarchyComparator());
     private final ListIterator<Command> commands = new LinkedList<Command>().listIterator();
+    private final SortedSet<ExecutionRecord> executionRecords = new TreeSet<>();
 
     private CommandDelegator() {}
 
@@ -21,8 +22,6 @@ public class CommandDelegator{
     }
 
     private final List<PropertyChangeListener> listeners = new LinkedList<>();
-
-    private String lastCommandStatus;
 
     /**
      * Subscribes an executor to listen for and execute any commands that are an instance of the specified class, or any sub-classes
@@ -116,13 +115,9 @@ public class CommandDelegator{
 
         if (record) {
             commands.add(command);
-
-            final String newCommandStatus = "Do " + command.getName();
-            notifyListeners(lastCommandStatus, newCommandStatus);
-            lastCommandStatus = newCommandStatus;
-
-            System.out.println(newCommandStatus);
         }
+
+        this.addExecutionRecord(new ExecutionRecord(command, ExecutionRecord.Operation.DO));
 
         return true;
     }
@@ -147,11 +142,7 @@ public class CommandDelegator{
                         //noinspection unchecked
                         undoableExecutor.unexecute((UndoableCommand) command);
 
-                        final String newCommandStatus = "Undo " + command.getName();
-                        notifyListeners(lastCommandStatus, newCommandStatus);
-                        lastCommandStatus = newCommandStatus;
-
-                        System.out.println(newCommandStatus);
+                        this.addExecutionRecord(new ExecutionRecord(command, ExecutionRecord.Operation.UNDO));
                         return true;
                     }
                 }
@@ -186,11 +177,7 @@ public class CommandDelegator{
                         //noinspection unchecked
                         undoableExecutor.reexecute((UndoableCommand) command);
 
-                        final String newCommandStatus = "Redo " + command.getName();
-                        notifyListeners(lastCommandStatus, newCommandStatus);
-                        lastCommandStatus = newCommandStatus;
-
-                        System.out.println(newCommandStatus);
+                        this.addExecutionRecord(new ExecutionRecord(command, ExecutionRecord.Operation.REDO));
                         return true;
                     }
                 }
@@ -270,8 +257,48 @@ public class CommandDelegator{
         return null;
     }
 
-    public String getLastCommandStatus() {
-        return lastCommandStatus;
+    /**
+     * Adds a new {@link ExecutionRecord} to the list of previously performed commands. Notifies any listeners of {@link CommandDelegator}
+     * @param newRecord The ExecutionRecord to add
+     * @return true if the record is successfully added, false otherwise
+     */
+    private boolean addExecutionRecord(final ExecutionRecord newRecord) {
+        final ExecutionRecord latestRecord = executionRecords.isEmpty() ? null : executionRecords.first();
+
+        if (executionRecords.add(newRecord)) {
+            notifyListeners(latestRecord, newRecord);
+            return true;
+        }
+
+        return false;
+    }
+
+    public Optional<ExecutionRecord> getLatestExecutionRecord() {
+        return executionRecords.isEmpty() ? Optional.empty() : Optional.of(executionRecords.first());
+    }
+
+    public SortedSet<ExecutionRecord> getExecutionRecords() {
+        return new TreeSet<>(executionRecords);
+    }
+
+    /**
+     * Gets the {@code X} most recent records where x is the value of count parameter.
+     *
+     * @param count the number of ExecutionRecords to return
+     * @return a new SortedSet containing the requested records
+     * @throws IndexOutOfBoundsException if {@code count} is less than 0
+     */
+    public SortedSet<ExecutionRecord> getExecutionRecords(final int count) {
+        if (count < 0)
+        {
+            throw new IndexOutOfBoundsException("Index out of range: " + count);
+        }
+        final SortedSet<ExecutionRecord> result = new TreeSet<>();
+        final Iterator<ExecutionRecord> iterator = executionRecords.iterator();
+        for (int i = 0; i < count && iterator.hasNext(); i++) {
+            result.add(iterator.next());
+        }
+        return result;
     }
 
     /**
@@ -287,7 +314,7 @@ public class CommandDelegator{
         return this.listeners.remove(listener);
     }
 
-    private void notifyListeners(final String oldValue, final String newValue) {
+    private void notifyListeners(final Object oldValue, final Object newValue) {
         final PropertyChangeEvent event = new PropertyChangeEvent(this, "lastCommandStatus", oldValue, newValue);
         for (final PropertyChangeListener listener : listeners) {
             listener.propertyChange(event);
