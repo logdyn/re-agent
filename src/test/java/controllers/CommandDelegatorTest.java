@@ -2,6 +2,7 @@ package controllers;
 
 import com.logdyn.Command;
 import com.logdyn.CommandDelegator;
+import com.logdyn.NoSuchExecutorException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,10 +20,12 @@ class CommandDelegatorTest {
 
         assertTrue(CommandDelegator.getINSTANCE().subscribe(executor, SubscribeCommand.class));
         try {
-            assertTrue(CommandDelegator.getINSTANCE().publish(command));
+            CommandDelegator.getINSTANCE().publish(command);
             assertTrue(executor.executed);
         } catch (Exception e) {
             fail(e);
+        } finally {
+            assertTrue(CommandDelegator.getINSTANCE().unsubscribe(executor));
         }
     }
 
@@ -34,11 +37,14 @@ class CommandDelegatorTest {
         assertTrue(CommandDelegator.getINSTANCE().subscribe(executor, UnsubscribeCommand.class));
         assertTrue(CommandDelegator.getINSTANCE().unsubscribe(executor));
         try {
-            assertFalse(CommandDelegator.getINSTANCE().publish(command));
+            assertThrows(NoSuchExecutorException.class, () -> CommandDelegator.getINSTANCE().publish(command));
             assertFalse(executor.executed);
-        } catch (Exception e) {
+        }catch(Exception e) {
             fail(e);
+        } finally {
+            assertFalse(CommandDelegator.getINSTANCE().unsubscribe(executor));
         }
+
     }
 
     @Test
@@ -48,10 +54,12 @@ class CommandDelegatorTest {
 
         assertTrue(CommandDelegator.getINSTANCE().subscribe(executor, PublishCommand.class));
         try {
-            assertTrue(CommandDelegator.getINSTANCE().publish(command));
+            CommandDelegator.getINSTANCE().publish(command);
             assertTrue(executor.executed);
         } catch (Exception e) {
             fail(e);
+        } finally {
+            assertTrue(CommandDelegator.getINSTANCE().unsubscribe(executor));
         }
     }
 
@@ -62,23 +70,54 @@ class CommandDelegatorTest {
 
         assertTrue(CommandDelegator.getINSTANCE().subscribe(executor, UndoCommand.class));
         try {
-            assertTrue(CommandDelegator.getINSTANCE().publish(command));
+            CommandDelegator.getINSTANCE().publish(command);
             assertTrue(executor.executed);
             assertTrue(executor.redone);
             //Undo
-            assertTrue(CommandDelegator.getINSTANCE().undo());
+            CommandDelegator.getINSTANCE().undo();
             assertTrue(executor.unexecuted);
             assertFalse(executor.redone);
             //Redo
-            assertTrue(CommandDelegator.getINSTANCE().redo());
+            CommandDelegator.getINSTANCE().redo();
             assertTrue(executor.executed);
             assertTrue(executor.redone);
             //Undo-redo
-            assertTrue(CommandDelegator.getINSTANCE().undo());
+            CommandDelegator.getINSTANCE().undo();
             assertTrue(executor.unexecuted);
             assertFalse(executor.redone);
         } catch (Exception e) {
             fail(e);
+        } finally {
+            assertTrue(CommandDelegator.getINSTANCE().unsubscribe(executor));
+        }
+    }
+
+    @Test
+    void multipleUndo() {
+
+        int count = 3;
+        MultipleUndoTestExecutor executor = new MultipleUndoTestExecutor();
+        Command command = new UndoCommand();
+
+        assertTrue(CommandDelegator.getINSTANCE().subscribe(executor, UndoCommand.class));
+
+        try {
+            for (int i = 0; i < count; i++) {
+                assertDoesNotThrow(
+                        () -> CommandDelegator.getINSTANCE().publish(command),
+                        "Published command count: " + i);
+            }
+
+            assertEquals(count, executor.executedCount);
+
+            CommandDelegator.getINSTANCE().undo(count);
+
+            assertEquals(count, executor.unexecutedCount);
+
+        } catch (Exception e) {
+            fail(e);
+        } finally {
+            assertTrue(CommandDelegator.getINSTANCE().unsubscribe(executor));
         }
     }
 
@@ -89,19 +128,54 @@ class CommandDelegatorTest {
 
         assertTrue(CommandDelegator.getINSTANCE().subscribe(executor, RedoCommand.class));
         try {
-            assertTrue(CommandDelegator.getINSTANCE().publish(command));
+            CommandDelegator.getINSTANCE().publish(command);
             assertTrue(executor.executed);
             assertTrue(executor.redone);
             //Undo
-            assertTrue(CommandDelegator.getINSTANCE().undo());
+            CommandDelegator.getINSTANCE().undo();
             assertTrue(executor.unexecuted);
             assertFalse(executor.redone);
             //Redo
-            assertTrue(CommandDelegator.getINSTANCE().redo());
+            CommandDelegator.getINSTANCE().redo();
             assertTrue(executor.executed);
             assertTrue(executor.redone);
         } catch (Exception e) {
             fail(e);
+        } finally {
+            assertTrue(CommandDelegator.getINSTANCE().unsubscribe(executor));
+        }
+    }
+
+    @Test
+    void multipleRedo() {
+
+        int count = 3;
+        MultipleRedoTestExecutor executor = new MultipleRedoTestExecutor();
+        Command command = new RedoCommand();
+
+        assertTrue(CommandDelegator.getINSTANCE().subscribe(executor, RedoCommand.class));
+
+        try {
+
+            for (int i = 0; i < count; i++) {
+                assertDoesNotThrow(
+                        () -> CommandDelegator.getINSTANCE().publish(command),
+                        "Published command count: " + i);
+            }
+            assertEquals(count, executor.executedCount);
+
+            CommandDelegator.getINSTANCE().undo(count);
+
+            assertEquals(count, executor.unexecutedCount);
+
+            CommandDelegator.getINSTANCE().redo(count);
+
+            assertEquals(count, executor.reexecutedCount);
+
+        } catch (Exception e) {
+            fail(e);
+        } finally {
+            assertTrue(CommandDelegator.getINSTANCE().unsubscribe(executor));
         }
     }
 }

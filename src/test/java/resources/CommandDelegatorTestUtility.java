@@ -11,7 +11,7 @@ public class CommandDelegatorTestUtility {
 
         @Override
         public String getName() {
-            return null;
+            return this.getClass().getSimpleName();
         }
     }
 
@@ -19,7 +19,7 @@ public class CommandDelegatorTestUtility {
 
         @Override
         public String getName() {
-            return null;
+            return this.getClass().getSimpleName();
         }
     }
 
@@ -27,7 +27,7 @@ public class CommandDelegatorTestUtility {
 
         @Override
         public String getName() {
-            return null;
+            return this.getClass().getSimpleName();
         }
     }
 
@@ -35,7 +35,7 @@ public class CommandDelegatorTestUtility {
 
         @Override
         public String getName() {
-            return null;
+            return this.getClass().getSimpleName();
         }
     }
 
@@ -43,7 +43,7 @@ public class CommandDelegatorTestUtility {
 
         @Override
         public String getName() {
-            return null;
+            return this.getClass().getSimpleName();
         }
     }
 
@@ -96,6 +96,22 @@ public class CommandDelegatorTestUtility {
         }
     }
 
+    public static class MultipleUndoTestExecutor implements UndoableExecutor<UndoCommand> {
+
+        public int executedCount = 0;
+        public int unexecutedCount = 0;
+
+        @Override
+        public void execute(UndoCommand command) throws Exception {
+            executedCount++;
+        }
+
+        @Override
+        public void unexecute(UndoCommand command) throws Exception {
+            unexecutedCount++;
+        }
+    }
+
     public static class RedoTestExecutor implements UndoableExecutor<RedoCommand> {
 
         public boolean executed = false;
@@ -112,6 +128,28 @@ public class CommandDelegatorTestUtility {
         public void unexecute(RedoCommand command) throws Exception {
             unexecuted = true;
             redone = false;
+        }
+    }
+
+    public static class MultipleRedoTestExecutor implements UndoableExecutor<RedoCommand> {
+
+        public int executedCount = 0;
+        public int unexecutedCount = 0;
+        public int reexecutedCount = 0;
+
+        @Override
+        public void execute(RedoCommand command) throws Exception {
+            executedCount++;
+        }
+
+        @Override
+        public void unexecute(RedoCommand command) throws Exception {
+            unexecutedCount++;
+        }
+
+        @Override
+        public void reexecute(RedoCommand command) throws Exception {
+            reexecutedCount++;
         }
     }
 }

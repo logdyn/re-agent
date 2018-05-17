@@ -32,6 +32,9 @@ public class CommandDelegator{
      */
     public <C extends Command> boolean subscribe(final Executor<C> executor, final Class <C> clazz) {
 
+        Objects.requireNonNull(executor, "Executor cannot be null");
+        Objects.requireNonNull(clazz, "Clazz cannot be null");
+
         //prevent duplicate subscription to a command
         for (Class<?> subbedClass: executors.keySet()) {
             if (subbedClass.isAssignableFrom(clazz)) {
@@ -57,39 +60,37 @@ public class CommandDelegator{
      * Gets the most generic executor for the given command
      * @param command The command for the executor to handle
      * @return Returns the most generic executor for the given command, returns null if no suitable executor can be found
+     * @throws NoSuchExecutorException if there is no registered {@link Executor} for the given {@link Command}
      */
     private Executor getExecutor(final Command command) {
+        Objects.requireNonNull(command, "command must be not null");
         for (final Map.Entry<Class<?>, Executor<?>> entry : executors.entrySet()) {
             if (entry.getKey().isAssignableFrom(command.getClass())) {
                 return entry.getValue();
             }
         }
-        return null;
+        throw new NoSuchExecutorException(command);
     }
 
     /**
      * Publishes command to the most generic subscribed executor. Always records for undo, see {@link #publish(Command, boolean)} <br/>
      * @param command The command to execute
-     * @return false if no executor is subscribed.
      * @throws ExecutionException if the command does not execute successfully
+     * @throws NoSuchExecutorException if there is no registered {@link Executor} for the given {@link Command}
      */
-    public synchronized boolean publish(final Command command) throws ExecutionException {
-        return publish(command, true);
+    public synchronized void publish(final Command command) throws ExecutionException {
+        this.publish(command, true);
     }
 
     /**
      * Publishes command to the most generic subscribed executor for that command, with the option of recording for undo <br/>
      * @param command The command to execute
      * @param record whether or not to add the command to the stack, enabling undo/redo
-     * @return Returns true if the command is executed, returns false if no executor is subscribed.
      * @throws ExecutionException if the command does not execute successfully
+     * @throws NoSuchExecutorException if there is no registered {@link Executor} for the given {@link Command}
      */
-    public synchronized boolean publish(final Command command, final boolean record) throws ExecutionException {
+    public synchronized void publish(final Command command, final boolean record) throws ExecutionException {
         final Executor executor = getExecutor(command);
-
-        if (executor == null) {
-            return false;
-        }
 
         //remove any redoable commands in front of published command
         //i.e. can't publish, undo, publish, then redo the first publish
@@ -118,78 +119,100 @@ public class CommandDelegator{
         }
 
         this.addExecutionRecord(new ExecutionRecord(command, ExecutionRecord.Operation.DO));
-
-        return true;
     }
 
     /**
      * Call unexecute command on executor on previous command
      * Only works if both command and executor are undoable
-     * @return Returns true if the command undoes successfully, returns false if no executor is subscribed
+     * @throws NoSuchElementException if there is no {@link Command } to be undone
      * @throws ExecutionException if undo does not execute successfully
+     * @throws NoSuchExecutorException if there is no registered {@link Executor} for the {@link Command} to be undone
      */
-    public synchronized boolean undo() throws ExecutionException {
-        if (commands.hasPrevious()) {
-            final Command command = commands.previous();
+    public synchronized void undo() throws ExecutionException {
 
-            try {
-                if (command instanceof UndoableCommand) {
-                    Executor executor = getExecutor(command);
-                    if (executor instanceof UndoableExecutor) {
-                        final UndoableExecutor undoableExecutor = (UndoableExecutor) executor;
-                        //Unchecked call to unexecute()
-                        //doing this because can't determine type until runtime, will be correct
-                        //noinspection unchecked
-                        undoableExecutor.unexecute((UndoableCommand) command);
+        final Command command = commands.previous();
 
-                        this.addExecutionRecord(new ExecutionRecord(command, ExecutionRecord.Operation.UNDO));
-                        return true;
-                    }
+        try {
+            if (command instanceof UndoableCommand) {
+                Executor executor = getExecutor(command);
+                if (executor instanceof UndoableExecutor) {
+                    final UndoableExecutor undoableExecutor = (UndoableExecutor) executor;
+                    //Unchecked call to unexecute()
+                    //doing this because can't determine type until runtime, will be correct
+                    //noinspection unchecked
+                    undoableExecutor.unexecute((UndoableCommand) command);
+
+                    this.addExecutionRecord(new ExecutionRecord(command, ExecutionRecord.Operation.UNDO));
+                    return;
                 }
-                commands.next();
-            } catch (final Exception e) {
-                //Undo rolling history back
-                this.clearUndoHistory();
-                throw new ExecutionException(e);
             }
+            commands.next();
+        } catch (NoSuchExecutorException e) {
+            commands.next();
+            throw e;
+        } catch (final Exception e) {
+            //Undo rolling history back
+            this.clearUndoHistory();
+            throw new ExecutionException(e);
+        }
+    }
+
+    public void undo(int count) throws ExecutionException {
+        if (count < 0)
+        {
+            throw new IndexOutOfBoundsException("Index out of range: " + count);
         }
 
-        return false;
+        for (int i = 0; i < count; i++) {
+            undo();
+        }
     }
 
     /**
      * Call reexecute command on executor on previous command
      * Only works if both command and executor are redoable
-     * @return Returns true if command redoes successfuly, returns false if no executor is subscribed
-     * @throws ExecutionException if undo does not execute successfully
+     * @throws NoSuchElementException if there is no {@link Command } to be redone
+     * @throws ExecutionException if redo does not execute successfully
+     * @throws NoSuchExecutorException if there is no registered {@link Executor} for the {@link Command} to be redone
      */
-    public synchronized boolean redo() throws ExecutionException {
-        if (commands.hasNext()) {
-            final Command command = commands.next();
+    public synchronized void redo() throws ExecutionException {
 
-            try {
-                if (command instanceof UndoableCommand) {
-                    final Executor executor = getExecutor(command);
-                    if (executor instanceof UndoableExecutor) {
-                        final UndoableExecutor undoableExecutor = (UndoableExecutor) executor;
-                        //Unchecked call to unexecute()
-                        //doing this because can't determine type until runtime, will be correct
-                        //noinspection unchecked
-                        undoableExecutor.reexecute((UndoableCommand) command);
+        final Command command = commands.next();
 
-                        this.addExecutionRecord(new ExecutionRecord(command, ExecutionRecord.Operation.REDO));
-                        return true;
-                    }
+        try {
+            if (command instanceof UndoableCommand) {
+                final Executor executor = getExecutor(command);
+                if (executor instanceof UndoableExecutor) {
+                    final UndoableExecutor undoableExecutor = (UndoableExecutor) executor;
+                    //Unchecked call to unexecute()
+                    //doing this because can't determine type until runtime, will be correct
+                    //noinspection unchecked
+                    undoableExecutor.reexecute((UndoableCommand) command);
+
+                    this.addExecutionRecord(new ExecutionRecord(command, ExecutionRecord.Operation.REDO));
+                    return;
                 }
-                commands.previous();
-            } catch (Exception e) {
-                //Undo rolling history back
-                this.clearRedoHistory();
-                throw new ExecutionException(e);
             }
+            commands.previous();
+        } catch (NoSuchExecutorException e) {
+            commands.previous();
+            throw e;
+        } catch (Exception e) {
+            //Undo rolling history back
+            this.clearRedoHistory();
+            throw new ExecutionException(e);
+        }
+    }
+
+    public void redo(int count) throws ExecutionException {
+        if (count < 0)
+        {
+            throw new IndexOutOfBoundsException("Index out of range: " + count);
         }
 
-        return false;
+        for (int i = 0; i < count; i++) {
+            redo();
+        }
     }
 
     private void clearUndoHistory()
