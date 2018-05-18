@@ -73,7 +73,7 @@ public class CommandDelegator{
     }
 
     /**
-     * Publishes command to the most generic subscribed executor. Always records for undo, see {@link #publish(Command, boolean)} <br/>
+     * Publishes command to the most generic subscribed executor. Always records for undo, see {@link #publish(Command, boolean)}
      * @param command The command to execute
      * @throws ExecutionException if the command does not execute successfully
      * @throws NoSuchExecutorException if there is no registered {@link Executor} for the given {@link Command}
@@ -83,8 +83,8 @@ public class CommandDelegator{
     }
 
     /**
-     * Publishes command to the most generic subscribed executor for that command, with the option of recording for undo <br/>
-     * @param command The command to execute
+     * Publishes command to the most generic subscribed executor for that command, with the option of recording for undo
+     * @param command The command to publish and execute
      * @param record whether or not to add the command to the stack, enabling undo/redo
      * @throws ExecutionException if the command does not execute successfully
      * @throws NoSuchExecutorException if there is no registered {@link Executor} for the given {@link Command}
