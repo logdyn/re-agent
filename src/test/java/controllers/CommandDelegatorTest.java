@@ -1,9 +1,12 @@
 package controllers;
 
-import com.logdyn.Command;
-import com.logdyn.CommandDelegator;
-import com.logdyn.NoSuchExecutorException;
+import com.logdyn.*;
 import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static resources.CommandDelegatorTestUtility.*;
@@ -122,6 +125,29 @@ class CommandDelegatorTest {
     }
 
     @Test
+    void multipleUndoName() {
+        int count = 3;
+        UndoableExecutor<UndoableCommand> executor = new GenericUndoableExecutor();
+        List<Command> commands = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            commands.add(new NamedCommand(i + "th command"));
+        }
+        CommandDelegator.getINSTANCE().subscribe(executor, UndoableCommand.class);
+
+        try {
+            for (final Command command : commands) {
+                CommandDelegator.getINSTANCE().publish(command);
+            }
+            List<String> expectedNames = commands.stream().map(Command::getName).collect(Collectors.toList());
+            Collections.reverse(expectedNames);
+            List<String> actualNames = CommandDelegator.getINSTANCE().getUndoNames(count);
+            assertEquals(expectedNames, actualNames);
+        } catch (ExecutionException e) {
+            fail(e);
+        }
+    }
+
+    @Test
     void redo() {
         RedoTestExecutor executor = new RedoTestExecutor();
         Command command = new RedoCommand();
@@ -176,6 +202,31 @@ class CommandDelegatorTest {
             fail(e);
         } finally {
             assertTrue(CommandDelegator.getINSTANCE().unsubscribe(executor));
+        }
+    }
+
+    @Test
+    void multipleRedoName() {
+        int count = 3;
+        UndoableExecutor<UndoableCommand> executor = new GenericUndoableExecutor();
+        List<Command> commands = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            commands.add(new NamedCommand("Command: " + i));
+        }
+        CommandDelegator.getINSTANCE().subscribe(executor, UndoableCommand.class);
+
+        try {
+            for (final Command command : commands) {
+                CommandDelegator.getINSTANCE().publish(command);
+            }
+
+            CommandDelegator.getINSTANCE().undo(count);
+
+            List<String> expectedNames = commands.stream().map(Command::getName).collect(Collectors.toList());
+            List<String> actualNames = CommandDelegator.getINSTANCE().getRedoNames(count);
+            assertEquals(expectedNames, actualNames);
+        } catch (ExecutionException e) {
+            fail(e);
         }
     }
 }

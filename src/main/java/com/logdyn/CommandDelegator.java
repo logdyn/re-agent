@@ -268,6 +268,23 @@ public class CommandDelegator{
         return null;
     }
 
+    public List<String> getUndoNames(int count) {
+        List<String> results = new ArrayList<>(count);
+        int steps = 0;
+
+        while (steps < count && commands.hasPrevious()) {
+            results.add(commands.previous().getName());
+            steps++;
+        }
+
+        while (steps > 0) {
+            commands.next();
+            steps--;
+        }
+
+        return results;
+    }
+
     /**
      * @return the name of the command that would be the result of calling the {@link #redo()} method, returns null if no command can be redone,
      */
@@ -278,6 +295,23 @@ public class CommandDelegator{
         }
 
         return null;
+    }
+
+    public List<String> getRedoNames(int count) {
+        List<String> results = new ArrayList<>(count);
+        int steps = 0;
+
+        while (steps < count && commands.hasNext()) {
+            results.add(commands.next().getName());
+            steps++;
+        }
+
+        while (steps > 0) {
+            commands.previous();
+            steps--;
+        }
+
+        return results;
     }
 
     /**

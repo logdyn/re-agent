@@ -47,6 +47,33 @@ public class CommandDelegatorTestUtility {
         }
     }
 
+    public static class NamedCommand implements UndoableCommand {
+
+        private String name;
+
+        public NamedCommand(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+    }
+
+    public static class GenericUndoableExecutor implements  UndoableExecutor<UndoableCommand> {
+
+        @Override
+        public void unexecute(UndoableCommand command) throws Exception {
+            //NOOP
+        }
+
+        @Override
+        public void execute(UndoableCommand command) throws Exception {
+            //NOOP
+        }
+    }
+
     public static class SubscribeTestExecutor implements Executor<SubscribeCommand> {
 
         public boolean executed = false;
