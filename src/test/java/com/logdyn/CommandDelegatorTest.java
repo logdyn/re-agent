@@ -1,6 +1,5 @@
-package controllers;
+package com.logdyn;
 
-import com.logdyn.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -9,7 +8,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static resources.CommandDelegatorTestUtility.*;
+import static com.logdyn.resources.CommandDelegatorTestUtility.*;
 
 
 @SuppressWarnings("Duplicates")

@@ -1,6 +1,5 @@
-package comparators;
+package com.logdyn;
 
-import com.logdyn.ClassHierarchyComparator;
 import org.junit.jupiter.api.Test;
 
 import java.util.Comparator;
@@ -10,7 +9,7 @@ import java.util.TreeSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static resources.ClassHierarchyComparatorTestUtilities.*;
+import static com.logdyn.resources.ClassHierarchyComparatorTestUtilities.*;
 
 class ClassHierarchyComparatorTest {
 

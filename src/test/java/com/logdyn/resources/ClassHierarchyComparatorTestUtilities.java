@@ -1,4 +1,4 @@
-package resources;
+package com.logdyn.resources;
 
 import com.logdyn.Command;
 
