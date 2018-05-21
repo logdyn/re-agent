@@ -13,10 +13,13 @@ public class ExampleImplementation {
         //Publish a new ExampleCommand
         //The CommandDelegator will then call the execute() method in the ExampleExecutor
         CommandDelegator.getINSTANCE().publish(new ExampleCommand());
+
+        CommandDelegator.getINSTANCE().undo();
+        CommandDelegator.getINSTANCE().redo();
     }
 }
 
-class ExampleCommand implements Command {
+class ExampleCommand implements UndoableCommand {
 
     @Override
     public String getName() {
@@ -24,9 +27,19 @@ class ExampleCommand implements Command {
     }
 }
 
-class ExampleExecutor implements Executor<ExampleCommand> {
+class ExampleExecutor implements UndoableExecutor<ExampleCommand> {
     @Override
     public void execute(ExampleCommand command) {
         System.out.println("Hello, World!");
+    }
+
+    @Override
+    public void unexecute(ExampleCommand command) {
+        System.out.println("Goodbye, World!");
+    }
+
+    @Override
+    public void reexecute(ExampleCommand command) {
+        System.out.println("Hello again, World!");
     }
 }
