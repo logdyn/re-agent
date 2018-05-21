@@ -6,7 +6,39 @@
 
     <groupId>com.logdyn</groupId>
     <artifactId>re-agent</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
+
+    <name>com.logdyn:re-agent</name>
+    <description>A Java command delegation library, providing undo/redo functionality</description>
+    <url>https://github.com/logdyn/re-agent</url>
+
+    <licenses>
+        <license>
+            <name>MIT</name>
+            <url>https://github.com/logdyn/re-agent/blob/master/LICENSE</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Jake Lewis</name>
+            <email>jake@logdyn.com</email>
+            <organization>logdyn</organization>
+            <organizationUrl>logdyn.com</organizationUrl>
+        </developer>
+        <developer>
+            <name>Matt Rayner</name>
+            <email>matt@logdyn.com</email>
+            <organization>logdyn</organization>
+            <organizationUrl>logdyn.com</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git@github.com:logdyn/re-agent.git</connection>
+        <developerConnection>scm:git:git@github.com:logdyn/re-agent.git</developerConnection>
+        <url>https://github.com/logdyn/re-agent</url>
+    </scm>
 
     <build>
         <plugins>
@@ -35,6 +67,43 @@
                         <version>5.2.0</version>
                     </dependency>
                 </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.8</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.2.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.9.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
