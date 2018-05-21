@@ -11,7 +11,8 @@ public class CommandDelegator{
 
     private static final CommandDelegator INSTANCE = new CommandDelegator();
 
-    private final Map<Class<?>, Executor<?>> executors = new TreeMap<>(new ClassHierarchyComparator());
+    //private final Map<Class<?>, Executor<?>> executors = new TreeMap<>(new ClassHierarchyComparator());
+    private final ExecutorTree<Command> executorTree = new ExecutorTree<>();
     private final ListIterator<Command> commands = new LinkedList<Command>().listIterator();
     private final SortedSet<ExecutionRecord> executionRecords = new TreeSet<>();
 
@@ -27,22 +28,22 @@ public class CommandDelegator{
      * Subscribes an executor to listen for and execute any commands that are an instance of the specified class, or any sub-classes
      * @param executor The executor for the command or sub-classes of the command
      * @param clazz The class of the command
-     * @param <C> The type of the command the executor will handle
+     *
      * @return Returns true if the executor is successfully subscribed, returns false if the an executor of the class or a parent class is already subscribed
      */
-    public <C extends Command> boolean subscribe(final Executor<C> executor, final Class <C> clazz) {
+    public <C extends Command> boolean subscribe(final Executor<? super C> executor, final Class <C> clazz) {
 
         Objects.requireNonNull(executor, "Executor cannot be null");
         Objects.requireNonNull(clazz, "Clazz cannot be null");
 
         //prevent duplicate subscription to a command
-        for (Class<?> subbedClass: executors.keySet()) {
+        /*for (Class<?> subbedClass: executors.keySet()) {
             if (subbedClass.isAssignableFrom(clazz)) {
                 return false;
             }
-        }
-
-        executors.put(clazz, executor);
+        }*/
+        executorTree.put((Class<Command>) clazz, (Executor<? super Command>) executor);
+        //executors.put(clazz, executor);
         return true;
     }
 
@@ -53,7 +54,8 @@ public class CommandDelegator{
      * @return Returns true if the executor is found and removed, returns false if it is not found
      */
     public <C extends Command> boolean unsubscribe(final Executor<C> executor) {
-        return executors.entrySet().removeIf((e) -> e.getValue().equals(executor));
+        //return executors.entrySet().removeIf((e) -> e.getValue().equals(executor));
+        return false;
     }
 
     /**
@@ -64,12 +66,13 @@ public class CommandDelegator{
      */
     private Executor getExecutor(final Command command) {
         Objects.requireNonNull(command, "command must be not null");
-        for (final Map.Entry<Class<?>, Executor<?>> entry : executors.entrySet()) {
+        /*for (final Map.Entry<Class<?>, Executor<?>> entry : executors.entrySet()) {
             if (entry.getKey().isAssignableFrom(command.getClass())) {
                 return entry.getValue();
             }
-        }
-        throw new NoSuchExecutorException(command);
+        }*/
+        return executorTree.get(command, true);
+        //throw new NoSuchExecutorException(command);
     }
 
     /**
