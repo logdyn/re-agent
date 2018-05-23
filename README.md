@@ -8,10 +8,17 @@ Our WIP Java [Command delegation API](http://logdyn.com/re-agent/com/logdyn/pack
 - Listener support
 
 ## Installation
-Maven repository coming soon! 
+The current release version can be found on the maven central repository. To use it add the following dependency to your `pom.xml`:
 
-Current release can be found [on GitHub](https://github.com/logdyn/re-agent/releases). 
-Add the `re-agent.jar` file as a library and you're good to go!
+```xml
+<dependency>
+  <groupId>com.logdyn</groupId>
+  <artifactId>re-agent</artifactId>
+  <version>1.0</version>
+</dependency>
+```
+
+The release can also be found on the [GitHub releases](https://github.com/logdyn/re-agent/releases).
 
 ## How to Use
 
