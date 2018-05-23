@@ -14,16 +14,16 @@ env:
   - secure: ZXF87gUGwIiSkECnGHdbzFe5JD+fOVamtNYIOMVkhhYu6IdoTs5FI7xeRQcYCiEjEorbyp+87VmVnVDsxPi6disTYbyvluqjzt0QOlfCeDuFbbuplDEay7T6nnyJFzXSD58IaSKri9b3TkJpYqQ9mHwzzRhbQH8kaateEa1woACEc53D+TcZ9jbwo8D/H+jCsHEza69nGcQlUqfYWmd6QOBUe0GEYoDjx4A7KlGQ+jxGRS/bc8mFM7K4nwJnGfX8OYUZBf3Jz6gpsnm4dzEvea5rDzGM34ZXo+esuhzQTABogKiRqketIBkYokCqSMOiN6GjhYLNdbxYtZEgH3HB6JNz3+DjsATdeHEZ3j2Y10bzwyKssAaOLbHYYOY6SplJEK7/KGckDTyzI1BFzpve+XlGbKpr6eaDoFSVVOi4TLd7xiVvm6KdH75XRlJx9ENNbP8UxCv48/9Wi1X9ToivQV/B9r1wFrM3oisYqzAtT9OFxaE/mUHlOtvqP/wi6GAqziKsXwTWDxV9ltGBR8LOM4pN7JsFKRlnJBb0oblqfS4cQxlhE3FrF5/mvrEpKQjzyZ2p6cXujmbiHzUiayQ6qBoUENmN+yBlSiVCBWqYrYPXrKI1L+VyNDkS5NJEqoMhC8wnNAucNxVrt5Ku34iJMNJ5oJ5Ka+Cr1YnGukpDou4=
   - # ^^ GPG_PASSPHRASE
 
-before_install:
-  - chmod +x ./cd/before-deploy.sh
-  - chmod +x ./cd/deploy.sh
-
   install: mvn install -P !release -DskipTests=true -Dmaven.javadoc.skip=true -B -V
 script: mvn test -P !release -B
 
 cache:
   directories:
     - ~/.m2/repository
+
+before_install:
+  - chmod +x ./cd/before-deploy.sh
+  - chmod +x ./cd/deploy.sh
 
 after_success:
   - ./cd/before-deploy.sh
