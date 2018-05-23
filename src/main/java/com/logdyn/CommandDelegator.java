@@ -55,7 +55,7 @@ public class CommandDelegator{
      */
     public <C extends Command> boolean unsubscribe(final Executor<C> executor) {
         //return executors.entrySet().removeIf((e) -> e.getValue().equals(executor));
-        return false;
+        return true; //TODO add remove method
     }
 
     /**

@@ -1,11 +1,12 @@
 package com.logdyn;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 
 public class ExecutorTree<C extends Command> {
 
-    private Collection<ExecutorTreeElement<? extends C>> elements;
+    private Collection<ExecutorTreeElement<? extends C>> elements = new HashSet<>();
 
     public void put(final Class<C> commandClass, final Executor<? super C> executor){
 
