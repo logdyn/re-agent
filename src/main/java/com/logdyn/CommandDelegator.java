@@ -1,5 +1,8 @@
 package com.logdyn;
 
+import com.logdyn.staging.ExecutionStrategy;
+import com.logdyn.staging.Executor;
+
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.*;
@@ -11,7 +14,7 @@ public class CommandDelegator{
 
     private static final CommandDelegator INSTANCE = new CommandDelegator();
 
-    private final Map<Class<?>, Executor<?>> executors = new TreeMap<>(new ClassHierarchyComparator());
+    private final Map<Class<? extends Command>, Executor<? extends Command>> executors = new TreeMap<>(new ClassHierarchyComparator());
     private final ListIterator<Command> commands = new LinkedList<Command>().listIterator();
     private final SortedSet<ExecutionRecord> executionRecords = new TreeSet<>();
 
@@ -56,20 +59,25 @@ public class CommandDelegator{
         return executors.entrySet().removeIf((e) -> e.getValue().equals(executor));
     }
 
+    private Executor<Command> getExecutor(final Command command) {
+        return getExecutor(command.getClass());
+    }
+
     /**
      * Gets the most generic executor for the given command
      * @param command The command for the executor to handle
      * @return Returns the most generic executor for the given command, returns null if no suitable executor can be found
      * @throws NoSuchExecutorException if there is no registered {@link Executor} for the given {@link Command}
      */
-    private Executor getExecutor(final Command command) {
+    private Executor<Command> getExecutor(final Class<? extends Command> command) {
         Objects.requireNonNull(command, "command must be not null");
-        for (final Map.Entry<Class<?>, Executor<?>> entry : executors.entrySet()) {
+        for (final Map.Entry<Class<? extends Command>, Executor<? extends Command>> entry : executors.entrySet()) {
             if (entry.getKey().isAssignableFrom(command.getClass())) {
-                return entry.getValue();
+                return (Executor<Command>) entry.getValue();
             }
         }
-        throw new NoSuchExecutorException(command);
+        //throw new NoSuchExecutorException();
+        return null;
     }
 
     /**
@@ -90,7 +98,7 @@ public class CommandDelegator{
      * @throws NoSuchExecutorException if there is no registered {@link Executor} for the given {@link Command}
      */
     public synchronized void publish(final Command command, final boolean record) throws ExecutionException {
-        final Executor executor = getExecutor(command);
+        final Executor<Command> executor = getExecutor(command);
 
         //remove any redoable commands in front of published command
         //i.e. can't publish, undo, publish, then redo the first publish
@@ -101,7 +109,7 @@ public class CommandDelegator{
 
 
         //If the command is not undoable, clear all previous history
-        if (!(command instanceof UndoableCommand) && record) {
+        if (!executor.hasUnexecute() && record) {
             this.clearUndoHistory();
         }
 
@@ -133,18 +141,12 @@ public class CommandDelegator{
         final Command command = commands.previous();
 
         try {
-            if (command instanceof UndoableCommand) {
-                Executor executor = getExecutor(command);
-                if (executor instanceof UndoableExecutor) {
-                    final UndoableExecutor undoableExecutor = (UndoableExecutor) executor;
-                    //Unchecked call to unexecute()
-                    //doing this because can't determine type until runtime, will be correct
-                    //noinspection unchecked
-                    undoableExecutor.unexecute((UndoableCommand) command);
+            Executor<Command> executor = getExecutor(command);
+            if (executor.hasUnexecute()) {
+                executor.unexecute(command);
 
-                    this.addExecutionRecord(new ExecutionRecord(command, ExecutionRecord.Operation.UNDO));
-                    return;
-                }
+                this.addExecutionRecord(new ExecutionRecord(command, ExecutionRecord.Operation.UNDO));
+                return;
             }
             commands.next();
         } catch (NoSuchExecutorException e) {
@@ -180,19 +182,18 @@ public class CommandDelegator{
         final Command command = commands.next();
 
         try {
-            if (command instanceof UndoableCommand) {
-                final Executor executor = getExecutor(command);
-                if (executor instanceof UndoableExecutor) {
-                    final UndoableExecutor undoableExecutor = (UndoableExecutor) executor;
-                    //Unchecked call to unexecute()
-                    //doing this because can't determine type until runtime, will be correct
-                    //noinspection unchecked
-                    undoableExecutor.reexecute((UndoableCommand) command);
+            final Executor<Command> executor = getExecutor(command);
+            //Unchecked call to unexecute()
+            //doing this because can't determine type until runtime, will be correct
+            //noinspection unchecked
+            if (executor.hasReexecute()) {
+                executor.reexecute(command);
 
-                    this.addExecutionRecord(new ExecutionRecord(command, ExecutionRecord.Operation.REDO));
-                    return;
-                }
+                this.addExecutionRecord(new ExecutionRecord(command, ExecutionRecord.Operation.REDO));
+                return;
             }
+
+
             commands.previous();
         } catch (NoSuchExecutorException e) {
             commands.previous();
@@ -239,9 +240,11 @@ public class CommandDelegator{
         if (commands.hasPrevious()) {
             final Command previous = commands.previous();
             commands.next(); //revert position of ListIterator
-            return previous instanceof UndoableCommand;
+
+            return getExecutor(previous).hasUnexecute();
         }
         return false;
+
     }
 
     /**
@@ -251,7 +254,7 @@ public class CommandDelegator{
         if (commands.hasNext()) {
             final Command next = commands.next();
             commands.previous(); //Revert position of ListIterator
-            return next instanceof UndoableCommand;
+            return getExecutor(next).hasReexecute();
         }
         return false;
     }
