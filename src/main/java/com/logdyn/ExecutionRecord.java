@@ -2,7 +2,7 @@ package com.logdyn;
 
 import java.util.Comparator;
 
-class ExecutionRecord implements Comparable<ExecutionRecord>{
+public class ExecutionRecord implements Comparable<ExecutionRecord>{
     private Command command;
     private long timestamp;
     private Operation operation;
