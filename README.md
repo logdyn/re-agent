@@ -1,6 +1,6 @@
 # Logdyn re-agent [![Build Status](https://travis-ci.org/logdyn/re-agent.svg?branch=master)](https://travis-ci.org/logdyn/re-agent)
 
-Our Java [Command delegation API](http://logdyn.com/re-agent/com/logdyn/package-summary.html).
+A Java command delegation & undo-redo library.
 
 ## Features
 - Undo & Redo
@@ -14,7 +14,7 @@ The current release version can be found on the maven central repository. To use
 <dependency>
   <groupId>com.logdyn</groupId>
   <artifactId>re-agent</artifactId>
-  <version>1.0</version>
+  <version>1.2</version>
 </dependency>
 ```
 
