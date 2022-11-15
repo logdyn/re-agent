@@ -90,6 +90,21 @@ public class CommandDelegator{
      * @throws NoSuchExecutorException if there is no registered {@link Executor} for the given {@link Command}
      */
     public synchronized void publish(final Command command, final boolean record) throws ExecutionException {
+        this.publish(command, record, true);
+    }
+
+    /**
+     * Publishes command to the most generic subscribed executor for that command, with the option of recording for undo
+     * and the option to create an execution record.
+     *
+     * @param command The command to publish and execute
+     * @param record  whether or not to add the command to the stack, enabling undo/redo
+     * @param createExecutionRecord whether or not to create an execution record. If set to {@code false},
+     *                              listeners will not be notified.
+     * @throws ExecutionException      if the command does not execute successfully
+     * @throws NoSuchExecutorException if there is no registered {@link Executor} for the given {@link Command}
+     */
+    public synchronized void publish(final Command command, final boolean record, final boolean createExecutionRecord) throws ExecutionException {
         final Executor executor = getExecutor(command);
 
         //remove any redoable commands in front of published command
@@ -118,7 +133,8 @@ public class CommandDelegator{
             commands.add(command);
         }
 
-        this.addExecutionRecord(new ExecutionRecord(command, ExecutionRecord.Operation.DO));
+        if (createExecutionRecord)
+            this.addExecutionRecord(new ExecutionRecord(command, ExecutionRecord.Operation.DO));
     }
 
     /**
